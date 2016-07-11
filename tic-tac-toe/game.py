@@ -19,7 +19,7 @@ def MoveScore(matrix_board, matrix_move):
     move = ArrayToMatrix(matrix_move)
     assert(len(board_before_move) != 0)
     if not IsValidMove(board_before_move, move):
-        return -10.
+        return 0.
     board = board_before_move + move
 
     # check horizontal

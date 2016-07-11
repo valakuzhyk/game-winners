@@ -14,6 +14,9 @@ assert(game.MoveScore(board, move) == -10), game.MoveScore(board, move)
 board =  np.array([[0,1,1], [0,0,0], [0,0,0]])
 assert(game.MoveScore(board, move) == 1), game.MoveScore(board, move)
 
+board =  np.array([0,1,1,-1,-1,0, 0,0,0])
+assert(game.MoveScore(board, move) == 1), game.MoveScore(board, move)
+
 ### Test IsValidMove ###
 board = np.zeros([3,3])
 move = np.array([[1,0,0],[0,0,0],[0,0,0]])

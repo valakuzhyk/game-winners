@@ -14,7 +14,7 @@ def hot_one_state(index):
 # we will create a set of states, the agent get a reward for getting to the 5th one(4 in zero based array).
 # the agent can go forward or backward by one state with wrapping(so if you go back from the 1st state you go to the end).
 states = [(x == 4 or x == 6) for x in range(NUM_STATES)]
-# [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, .0, 0.0, 0.0, 0.0]
+# [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 0.0]
 
 session = tf.Session()
 state = tf.placeholder("float", [None, NUM_STATES])
@@ -42,17 +42,23 @@ for i in range(50):
 
         minus_action_state_reward = session.run(output, feed_dict={state: [hot_one_state(minus_action_index)]})[0]
         plus_action_state_reward = session.run(output, feed_dict={state: [hot_one_state(plus_action_index)]})[0]
-
+        print (state_index)
+        print("Minus action")
+        print(minus_action_state_reward)
+        print("Plus action")
+        print(plus_action_state_reward)
         # these action rewards are the results of the Q function for this state and the actions minus or plus
         action_rewards = [states[minus_action_index] + GAMMA * np.max(minus_action_state_reward),
                           states[plus_action_index] + GAMMA * np.max(plus_action_state_reward)]
         rewards_batch.append(action_rewards)
-        wait = input("Press enter to continue!")
+        print("rewards")
         print(rewards_batch)
+        wait = input("Press enter to continue!")
 
     session.run(train_operation, feed_dict={
         state: state_batch,
         targets: rewards_batch})
+
 
     print([states[x] + np.max(session.run(output, feed_dict={state: [hot_one_state(x)]}))
            for x in range(NUM_STATES)])

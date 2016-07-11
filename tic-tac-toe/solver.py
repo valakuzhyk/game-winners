@@ -5,16 +5,39 @@ import random as rand
 import game
 
 NUM_ACTIONS = 9
-GAMMA = 0.5
+GAMMA = 0.2
 
-NUM_TRAINING_GAMES = 1000
+NUM_TRAINING_GAMES = 10000
 
+def weight_variable(shape):
+  initial = tf.truncated_normal(shape, stddev=0.1)
+  return tf.Variable(initial)
+
+def bias_variable(shape):
+  initial = tf.constant(0.1, shape=shape)
+  return tf.Variable(initial)
+
+def conv2d(x, W):
+  return tf.nn.conv2d(x, W, strides=[1, 1, 1, 1], padding='SAME')
+
+def max_pool_2x2(x):
+  return tf.nn.max_pool(x, ksize=[1, 2, 2, 1],
+                        strides=[1, 2, 2, 1], padding='SAME')
 
 def CreateNetwork():
     input_layer = tf.placeholder("float", [None, 9])
-    layer_weights = tf.Variable(tf.zeros([9, 9]))
-    bias = tf.Variable(tf.zeros([9]))
-    output_layer = tf.nn.softmax(tf.matmul(input_layer, layer_weights) + bias)
+    layer_weights = weight_variable([9,18])
+    bias = bias_variable([18])
+    
+    hidden_layer = tf.nn.relu(tf.matmul(input_layer, layer_weights) + bias)
+
+    drop_hidden_layer = tf.nn.dropout(hidden_layer, 1.0)
+
+    layer2_weights = weight_variable([18,9])
+    bias2 = bias_variable([9])
+
+
+    output_layer = tf.nn.softmax(tf.matmul(drop_hidden_layer, layer2_weights) + bias2)
     return input_layer, output_layer
 
 
@@ -22,11 +45,20 @@ def TrainModel():
 # Number of games to play
     for i in range(NUM_TRAINING_GAMES):
         PlayGame()
-        if i % 100 == 0:
+        if i % 1000 == 1:
+            test_board = [np.zeros(9).tolist()]
+            test_board[0][0] = 1
+            test_board[0][1] = 1
+            test_board[0][3] = -1
+            test_board[0][4] = -1
+            test_reward = session.run(output_layer, feed_dict={input_layer : test_board})[0]
+            print(np.reshape(test_reward,(3,3)))
             input("enter")
+
 
 def PlayGame():
     board = np.zeros(9).tolist()
+    board[0] = 1
 
     states = []
     actions = []
@@ -37,10 +69,23 @@ def PlayGame():
         for action in game.PossibleMoves(board):
             new_board_array = [[board[x] + action[x] for x in range(len(board))]]
             action_reward = session.run(output_layer, feed_dict={input_layer : new_board_array})[0]
-            assert(type(board) == type([])) ,type(board)
+            
+            reward_score = game.MoveScore(board, action) + GAMMA * np.max(action_reward)
+            '''
+            print("board")
+            print(np.reshape(board, (3,3)))
+            print("action")
+            print(np.reshape(action, (3,3)))
+            print("reward")
+            action_reward_score = np.max(action_reward)
+            print(reward_score)
+            print(action_reward_score)
+            input("enter")
+            '''
+
             states.append(board)
             actions.append(action)
-            rewards.append(game.MoveScore(board, action) + GAMMA * np.max(action_reward))
+            rewards.append(reward_score)
         result, board = UpdateBoard(board)
 
         if not result: break
@@ -53,7 +98,6 @@ def PlayGame():
     test_board[0][3] = -1
     test_board[0][4] = -1
     test_reward = session.run(output_layer, feed_dict={input_layer : test_board})[0]
-    print(np.reshape(test_reward, (3,3)))
 
 def UpdateBoard(board):
     valid_moves = game.PossibleValidMoves(board)
@@ -72,7 +116,7 @@ targets = tf.placeholder("float", [None])
 readout_action = tf.reduce_sum(tf.mul(output_layer, tf_actions), reduction_indices = 1)
 
 cost = tf.reduce_mean(tf.square(targets - readout_action))
-train_operation = tf.train.AdamOptimizer(0.01).minimize(cost)
+train_operation = tf.train.AdamOptimizer(0.001).minimize(cost)
 
 session.run(tf.initialize_all_variables())
 TrainModel()
