@@ -1,59 +1,85 @@
 import tensorflow as tf
 import numpy as np
+import random as rand
+
 import game
 
-NUM_STATES = 10
-NUM_ACTIONS = 2
+NUM_ACTIONS = 9
 GAMMA = 0.5
 
+NUM_TRAINING_GAMES = 1000
 
-def hot_one_state(r, c):
-    array = np.zeros(NUM_STATES)
-    array[r][c] = 1.
-    return array
 
-# we will create a set of states, the agent get a reward for getting to the 5th one(4 in zero based array).
-# the agent can go forward or backward by one state with wrapping(so if you go back from the 1st state you go to the end).
-states = [(x == 4 or x == 6) for x in range(NUM_STATES)]
-# [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, .0, 0.0, 0.0, 0.0]
+def CreateNetwork():
+    input_layer = tf.placeholder("float", [None, 9])
+    layer_weights = tf.Variable(tf.zeros([9, 9]))
+    bias = tf.Variable(tf.zeros([9]))
+    output_layer = tf.nn.softmax(tf.matmul(input_layer, layer_weights) + bias)
+    return input_layer, output_layer
+
+
+def TrainModel():
+# Number of games to play
+    for i in range(NUM_TRAINING_GAMES):
+        PlayGame()
+        if i % 100 == 0:
+            input("enter")
+
+def PlayGame():
+    board = np.zeros(9).tolist()
+
+    states = []
+    actions = []
+    rewards = []
+
+    while True:
+        # look at possible moves
+        for action in game.PossibleMoves(board):
+            new_board_array = [[board[x] + action[x] for x in range(len(board))]]
+            action_reward = session.run(output_layer, feed_dict={input_layer : new_board_array})[0]
+            assert(type(board) == type([])) ,type(board)
+            states.append(board)
+            actions.append(action)
+            rewards.append(game.MoveScore(board, action) + GAMMA * np.max(action_reward))
+        result, board = UpdateBoard(board)
+
+        if not result: break
+
+    # train
+    session.run(train_operation, feed_dict={input_layer: states, tf_actions: actions, targets: rewards})
+    test_board = [np.zeros(9).tolist()]
+    test_board[0][0] = 1
+    test_board[0][1] = 1
+    test_board[0][3] = -1
+    test_board[0][4] = -1
+    test_reward = session.run(output_layer, feed_dict={input_layer : test_board})[0]
+    print(np.reshape(test_reward, (3,3)))
+
+def UpdateBoard(board):
+    valid_moves = game.PossibleValidMoves(board)
+    if (len(valid_moves) == 0): return False, None
+    chosen_move = rand.choice(valid_moves)
+    if game.MoveScore(board, chosen_move) == 1: return False, None
+    board = [board[x] + chosen_move[x] for x in range(len(board))]
+    board = game.SwitchPlayer(board)
+    return True, board
 
 session = tf.Session()
-state = tf.placeholder("float", [None, NUM_STATES])
-targets = tf.placeholder("float", [None, NUM_ACTIONS])
+input_layer, output_layer = CreateNetwork()
 
-hidden_weights = tf.Variable(tf.constant(0., shape=[NUM_STATES, NUM_ACTIONS]))
+tf_actions = tf.placeholder("float", [None, NUM_ACTIONS])
+targets = tf.placeholder("float", [None])
+readout_action = tf.reduce_sum(tf.mul(output_layer, tf_actions), reduction_indices = 1)
 
-output = tf.matmul(state, hidden_weights)
-
-loss = tf.reduce_mean(tf.square(output - targets))
-train_operation = tf.train.AdamOptimizer(0.1).minimize(loss)
+cost = tf.reduce_mean(tf.square(targets - readout_action))
+train_operation = tf.train.AdamOptimizer(0.01).minimize(cost)
 
 session.run(tf.initialize_all_variables())
+TrainModel()
 
-for i in range(50):
-    state_batch = []
-    rewards_batch = []
+state = [np.zeros(9).tolist()]
+state[0][0] = 1
+state[0][1] = 1
 
-    # create a batch of states
-    for state_index in range(NUM_STATES):
-        state_batch.append(hot_one_state(state_index))
-
-        minus_action_index = (state_index - 1) % NUM_STATES
-        plus_action_index = (state_index + 1) % NUM_STATES
-
-        minus_action_state_reward = session.run(output, feed_dict={state: [hot_one_state(minus_action_index)]})[0]
-        plus_action_state_reward = session.run(output, feed_dict={state: [hot_one_state(plus_action_index)]})[0]
-
-        # these action rewards are the results of the Q function for this state and the actions minus or plus
-        action_rewards = [states[minus_action_index] + GAMMA * np.max(minus_action_state_reward),
-                          states[plus_action_index] + GAMMA * np.max(plus_action_state_reward)]
-        rewards_batch.append(action_rewards)
-        wait = input("Press enter to continue!")
-        print(rewards_batch)
-
-    session.run(train_operation, feed_dict={
-        state: state_batch,
-        targets: rewards_batch})
-
-    print([states[x] + np.max(session.run(output, feed_dict={state: [hot_one_state(x)]}))
-           for x in range(NUM_STATES)])
+action_reward = session.run(output_layer, feed_dict={input_layer : state})
+print(action_reward)

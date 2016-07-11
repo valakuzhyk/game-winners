@@ -9,7 +9,7 @@ move[0,0] = 1
 assert(game.MoveScore(board, move) == 0), game.MoveScore(board, move)
 
 board = np.array([[1,1,0],[0,0,0],[0,0,0]])
-assert(game.MoveScore(board, move) == -float('inf')), game.MoveScore(board, move)
+assert(game.MoveScore(board, move) == -10), game.MoveScore(board, move)
 
 board =  np.array([[0,1,1], [0,0,0], [0,0,0]])
 assert(game.MoveScore(board, move) == 1), game.MoveScore(board, move)
