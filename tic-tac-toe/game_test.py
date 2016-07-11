@@ -1,26 +1,25 @@
 import game
-import numpy
+import numpy as np
 
-### Test IsWon
+### Test MoveScore ###
 
-board = numpy.zeros([3,3])
-assert(game.IsWon(board) == 0)
+board = np.zeros([3,3])
+move = np.zeros([3,3])
+move[0,0] = 1
+assert(game.MoveScore(board, move) == 0), game.MoveScore(board, move)
 
-board = [[1,1,1],[0,0,0],[0,0,0]]
-assert(game.IsWon(board) == 1)
+board = np.array([[1,1,0],[0,0,0],[0,0,0]])
+assert(game.MoveScore(board, move) == -float('inf')), game.MoveScore(board, move)
 
-board = [[-1,0,0],[0,-1,0],[0,0,-1]]
-assert(game.IsWon(board) == -1)
+board =  np.array([[0,1,1], [0,0,0], [0,0,0]])
+assert(game.MoveScore(board, move) == 1), game.MoveScore(board, move)
 
-### TestFindPossibleMoves
-board = numpy.zeros([3,3])
-assert(len(game.FindPossibleMoves(board)) == 9)
+### Test IsValidMove ###
+board = np.zeros([3,3])
+move = np.array([[1,0,0],[0,0,0],[0,0,0]])
+assert(game.IsValidMove(board, move)), game.IsValidMove(board, move)
 
 board = [[1,1,1],[0,1,0],[0,1,1]]
-moves = game.FindPossibleMoves(board)
-assert(len(moves) == 3)
-assert([1,0] in moves)
-assert([1,2] in moves)
-assert([2,0] in moves)
+assert(not game.IsValidMove(board, move)), game.IsValidMove(board, move)
 
 print("Tests pass :)")
