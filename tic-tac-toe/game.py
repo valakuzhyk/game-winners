@@ -10,7 +10,7 @@ def MoveScore(board_before_move, move):
     assert(len(board_before_move) == 9)
     assert(len(move) == 9)
     if not IsValidMove(board_before_move, move):
-        return -2.
+        return 0
     board = np.array(board_before_move) + np.array(move)
 
     # No possible moves implies a tie
