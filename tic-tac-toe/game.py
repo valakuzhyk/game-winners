@@ -10,12 +10,8 @@ def MoveScore(board_before_move, move):
     assert(len(board_before_move) == 9)
     assert(len(move) == 9)
     if not IsValidMove(board_before_move, move):
-        return 0
+        return -10
     board = np.array(board_before_move) + np.array(move)
-
-    # No possible moves implies a tie
-    if len(PossibleValidMoves(board)) == 0:
-        return 0
 
     # check horizontal
     if sum(board[0:3]) > 2.9 or sum(board[3:6]) > 2.9 or sum(board[6:9]) > 2.9:
